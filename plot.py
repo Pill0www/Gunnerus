@@ -116,3 +116,5 @@ plt.tight_layout()
 # Save and show the plot
 plt.savefig('/mnt/data/energy_efficiency_plot.png')
 plt.show()
+
+print("hello")
