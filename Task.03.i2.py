@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the CSV data with proper delimiter
-csv_file = "20240910082627.csv"
+csv_file = "data.csv"
 df = pd.read_csv(csv_file, delimiter=';', header=None, names=['timestamp', 'sensor', 'value', 'unit'])
 
 # Convert the 'timestamp' column to datetime format
