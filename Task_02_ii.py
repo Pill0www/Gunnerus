@@ -1,45 +1,45 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from data import sensor_data  # Importing the sensor_data dictionary from data.py
+import matplotlib.dates as mdates
 
-# Define the sensors for Port and Starboard propulsion power
-port_power_sensor = 'gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'
-starboard_power_sensor = 'gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'
+# Load the CSV file
+file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
+data = pd.read_csv(file_path, sep=';', header=None, names=['timestamp', 'sensor', 'value', 'unit'])
 
-# Check if the required sensors are available in the sensor data
-if port_power_sensor in sensor_data and starboard_power_sensor in sensor_data:
-    # Extract timestamps and values
-    timestamps_port = sensor_data[port_power_sensor]['timestamps']
-    port_power = sensor_data[port_power_sensor]['values']
-    
-    timestamps_starboard = sensor_data[starboard_power_sensor]['timestamps']
-    starboard_power = sensor_data[starboard_power_sensor]['values']
-    
-    # Create DataFrames for the power data
-    df_port = pd.DataFrame({'timestamp': timestamps_port, 'P_PMI': pd.to_numeric(port_power, errors='coerce')})
-    df_starboard = pd.DataFrame({'timestamp': timestamps_starboard, 'P_SMI': pd.to_numeric(starboard_power, errors='coerce')})
-    
-    # Merge both DataFrames on timestamp without filling missing data
-    power_df = pd.merge(df_port, df_starboard, on='timestamp', how='outer')
+# Convert the timestamp to datetime
+data['timestamp'] = pd.to_datetime(data['timestamp'])
 
-    # Calculate total propulsion power only where data is present for both motors
-    power_df['P_TOT'] = power_df['P_PMI'] + power_df['P_SMI']
+# Pivot the DataFrame to get sensors as columns
+pivoted_data = data.pivot(index='timestamp', columns='sensor', values='value')
 
-    # Plotting
-    plt.figure(figsize=(14, 7))
+# Fill missing values using the forward fill method
+filled_data = pivoted_data.fillna(method='ffill')
 
-    # Plot Propulsion Power for each motor
-    plt.plot(power_df['timestamp'], power_df['P_PMI'], label='Port Motor Power [kW]', color='blue')
-    plt.plot(power_df['timestamp'], power_df['P_SMI'], label='Starboard Motor Power [kW]', color='orange')
-    plt.plot(power_df['timestamp'], power_df['P_TOT'], label='Total Power [kW]', color='green')
+# Reset the index to get timestamps as a column again
+filled_data.reset_index(inplace=True)
 
-    plt.title('Vessel Propulsion Power')
-    plt.xlabel('Time')
-    plt.ylabel('Power [kW]')
-    plt.legend()
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
+# Extract vectors for port and starboard load feedback
+a = 500/100
+port_load_feedback = a*filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
+stbd_load_feedback = a*filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
 
-else:
-    print("One or both of the required sensors are not found in the data.")
+# Combine the load feedback values
+combined_load_feedback = port_load_feedback + stbd_load_feedback
+
+# Plotting
+plt.figure(figsize=(12, 6))
+plt.plot(filled_data['timestamp'], port_load_feedback, label='Port Load Feedback', color='blue')
+plt.plot(filled_data['timestamp'], stbd_load_feedback, label='Starboard Load Feedback', color='orange')
+plt.plot(filled_data['timestamp'], combined_load_feedback, label='Combined Load Feedback', color='green')
+
+# Formatting the plot
+plt.title('Thruster Power Over Time')
+plt.xlabel('Time')
+plt.ylabel('Load Feedback (%)')
+plt.legend()
+plt.xticks(rotation=45)
+plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+plt.tight_layout()
+
+# Show the plot
+plt.show()
