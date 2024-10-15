@@ -18,24 +18,26 @@ filled_data = pivoted_data.fillna(method='ffill')
 # Reset the index to get timestamps as a column again
 filled_data.reset_index(inplace=True)
 
-# Extract vectors for port and starboard load feedback
-a = 500/100
-port_load_feedback = a*filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
-stbd_load_feedback = a*filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
+# Extract fuel consumption for Engine 1 and Engine 3
+engine1_fuel_consumption = filled_data['gunnerus/RVG_mqtt/Engine1/fuel_consumption'].values
+engine3_fuel_consumption = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consumption'].values
 
-# Combine the load feedback values
-combined_load_feedback = port_load_feedback + stbd_load_feedback
+# Total fuel consumption in liters per hour
+total_fuel_consumption_lph = engine1_fuel_consumption + engine3_fuel_consumption
+
+# Convert liters per hour to kilograms per hour (using the density of diesel: ~0.832 Kg/L)
+total_fuel_consumption_kgph = total_fuel_consumption_lph * 0.832
 
 # Plotting
 plt.figure(figsize=(12, 6))
-plt.plot(filled_data['timestamp'], port_load_feedback, label='Port Load Feedback', color='blue')
-plt.plot(filled_data['timestamp'], stbd_load_feedback, label='Starboard Load Feedback', color='orange')
-plt.plot(filled_data['timestamp'], combined_load_feedback, label='Combined Load Feedback', color='green')
+
+# Plot total fuel consumption in Kg vs time
+plt.plot(filled_data['timestamp'], total_fuel_consumption_kgph, label='Total Fuel Consumption (Kg)', color='green')
 
 # Formatting the plot
-plt.title('Thruster Power Over Time')
+plt.title('Total Fuel Consumption vs. Time')
 plt.xlabel('Time')
-plt.ylabel('Load Feedback (%)')
+plt.ylabel('Fuel Consumption [Kg/h]')
 plt.legend()
 plt.xticks(rotation=45)
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
