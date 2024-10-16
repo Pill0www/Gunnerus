@@ -38,7 +38,7 @@ df_merged[['fuel_cons_eng1', 'fuel_cons_eng2', 'power_eng1', 'power_eng2']] = df
 # Define constants (LHV of diesel fuel in MJ/kg)
 Q_hs = 45.4  # MJ/kg
 
-# Assuming fuel consumption is in liters/hour and converting to kg/s (1 liter of diesel ≈ 0.832 kg)
+# Assuming fuel consumption is in liters/hour and converting to kg/s (1 liter of diesel ≈ 0.820 kg)
 def fuel_consumption_to_kg_per_s(l_per_h):
     return l_per_h * 820 / 3600
 
