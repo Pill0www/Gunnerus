@@ -21,28 +21,26 @@ filled_data = pivoted_data.fillna(method='ffill')
 # Reset the index to get timestamps as a column again
 filled_data.reset_index(inplace=True)
 
-# Extract the port and starboard propulsion power using relevant sensors
+# Extract fuel consumption for engine 1 and 3
 df_fuel_cons_eng1 = filled_data['gunnerus/RVG_mqtt/Engine1/fuel_consumption']
 df_fuel_cons_eng3 = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consumption']
 
+#Extract the starboard and portside powerconsuption given in [%]
 df_port_power = filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback']
 df_starboard_power = filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback']
 
-# Extract engine load for Engine 1 and Engine 3
-engine1_load = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'].values
-engine3_load = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'].values
+# Extract engine load for Engine 1 and Engine 3 in [kW]
+engine1_load = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'] #.values
+engine3_load = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'] #.values
 
-# Combine port and starboard load feedback (propulsion power)
-combined_power = df_port_power + df_starboard_power
-
-# Combine engine loads (Combined Engine Power)
+#Extract motor rpm
+engine1_rpm = filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/RPMFeedback'] #.values
+engine3_rpm = filled_data['gunnerus/RVG_mqtt/hcx_port_mp/RPMFeedback']
+# Combine engine loads (Combined Engine Power) in [kW]
 combined_engine_load = engine1_load + engine3_load
 
 # Calculate total fuel consumption (for engine 1 and engine 3)
 total_fuel_consumption_lph = df_fuel_cons_eng1 + df_fuel_cons_eng3
-
-# Convert liters per hour to kilograms per hour (using diesel density of 0.820 kg/L)
-total_fuel_consumption_kgph = total_fuel_consumption_lph * 0.820
 
 # Energy content of diesel fuel in J/kg (heating value of diesel)
 Q_hs = 45.4 # MJ/kg 
@@ -56,7 +54,7 @@ def fuel_consumption_to_g_per_s(l_per_h):
 fuel_mass_flow_eng1 = fuel_consumption_to_g_per_s(df_fuel_cons_eng1)
 fuel_mass_flow_eng3 = fuel_consumption_to_g_per_s(df_fuel_cons_eng3)
 
-def sfc(fuel_mass_flow, power): #[g/s  /  kW]
+def sfc(fuel_mass_flow, power): #[g/s  /  kW] #spesific fuel consumption
     return fuel_mass_flow / power
 
 sfc1 = sfc(fuel_mass_flow_eng1, engine1_load)
@@ -66,6 +64,27 @@ sfc2 = sfc(fuel_mass_flow_eng3, engine3_load)
 thermal_efficiency_eng1 = 1 / (Q_hs * sfc1) * 100 #%
 thermal_efficiency_eng3 = 1 / (Q_hs * sfc2) * 100
 
+#Minimum and maximum thermal efficiensis
+for i in range(len(thermal_efficiency_eng1)):
+    if thermal_efficiency_eng1[i] == thermal_efficiency_eng1.min():
+        print(i)
+        break
+    i += 1
+
+min_thermal_efficiency_eng1 = thermal_efficiency_eng1.min()
+max_thermal_efficiency_eng1 = thermal_efficiency_eng1.max()
+
+#Engine torque and BMEP
+def Torque(power, rpm): #N = rpm/60 = crank shaft rotational speed (rev/sec)
+    return power / (2*np.pi * (rpm/60))
+
+def BMEP(power, rpm):
+    return (power*2)/(np.pi*(0.127/2)**2 *0.154 * (rpm/60))
+
+#prints of torque and BMPE
+#Min_thermal_eff torque and BMPE
+print(Torque(engine1_load[5307], engine1_rpm[5307]))
+print(BMEP(engine1_load[5307], engine1_rpm[5307]))
 # Plot thermal efficiency over time
 plt.figure(figsize=(10, 6))
 plt.plot(filled_data['timestamp'], thermal_efficiency_eng1, label='Thermal Efficiency Engine 1')
