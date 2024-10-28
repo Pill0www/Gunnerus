@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 # Load the CSV file
 file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
@@ -19,57 +18,59 @@ filled_data = pivoted_data.fillna(method='ffill')
 filled_data.reset_index(inplace=True)
 
 # Extract vectors for port and starboard load feedback
-port_load_feedback = (500/100)*filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
-stbd_load_feedback = (500/100)*filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
+port_load_feedback = (500 / 100) * filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
+stbd_load_feedback = (500 / 100) * filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
 
 # Combine the load feedback values
 combined_load_feedback = port_load_feedback + stbd_load_feedback
 
-# Slicing the vectors in half to get route 1 and route 2
-half_index = len(port_load_feedback) // 2  # Use integer division to get an integer index
+# Calculate time in minutes from the start
+time_from_start = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
 
-timestamps_route_1 = filled_data['timestamp'][:half_index]
-combined_load_feedback_route_1 = combined_load_feedback[:half_index]
-port_load_feedback_route_1 = port_load_feedback[:half_index]
-stbd_load_feedback_route_1 = stbd_load_feedback[:half_index]
+# Define route indices
+route_1_start = 530
+route_1_finish = 1108
+route_2_start = route_1_finish
+route_2_finish = min(2660, len(time_from_start))  # Ensure the finish index doesn't exceed dataset length
 
-timestamps_route_2 = filled_data['timestamp'][half_index:]
-combined_load_feedback_route_2 = combined_load_feedback[half_index:]
-port_load_feedback_route_2 = port_load_feedback[half_index:]
-stbd_load_feedback_route_2 = stbd_load_feedback[half_index:]
+# Data for Route 1 (with time reset to start from 0)
+time_route_1 = time_from_start[route_1_start:route_1_finish] - time_from_start[route_1_start]
+combined_load_feedback_route_1 = combined_load_feedback[route_1_start:route_1_finish]
+port_load_feedback_route_1 = port_load_feedback[route_1_start:route_1_finish]
+stbd_load_feedback_route_1 = stbd_load_feedback[route_1_start:route_1_finish]
+
+# Data for Route 2 (with time reset to start from 0)
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]
+combined_load_feedback_route_2 = combined_load_feedback[route_2_start:route_2_finish]
+port_load_feedback_route_2 = port_load_feedback[route_2_start:route_2_finish]
+stbd_load_feedback_route_2 = stbd_load_feedback[route_2_start:route_2_finish]
 
 # Plotting Route 1
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_1, combined_load_feedback_route_1, label='Combined Load Feedback - Route 1', color='green')
-plt.plot(timestamps_route_1, port_load_feedback_route_1, label='Port Load Feedback - Route 1', color='blue')
-plt.plot(timestamps_route_1, stbd_load_feedback_route_1, label='Starboard Load Feedback - Route 1', color='orange')
+plt.plot(time_route_1, combined_load_feedback_route_1, label='Combined Load Feedback - Route 1', color='green')
+plt.plot(time_route_1, port_load_feedback_route_1, label='Port Load Feedback - Route 1', color='blue')
+plt.plot(time_route_1, stbd_load_feedback_route_1, label='Starboard Load Feedback - Route 1', color='orange')
 
-# Formatting the plot
+# Formatting the plot for Route 1
 plt.title('Thruster Power Over Time - Route 1')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Load Feedback (kW)')
 plt.legend()
 plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 1
 plt.show()
 
 # Plotting Route 2
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_2, combined_load_feedback_route_2, label='Combined Load Feedback - Route 2', color='green')
-plt.plot(timestamps_route_2, port_load_feedback_route_2, label='Port Load Feedback - Route 2', color='blue')
-plt.plot(timestamps_route_2, stbd_load_feedback_route_2, label='Starboard Load Feedback - Route 2', color='orange')
+plt.plot(time_route_2, combined_load_feedback_route_2, label='Combined Load Feedback - Route 2', color='green')
+plt.plot(time_route_2, port_load_feedback_route_2, label='Port Load Feedback - Route 2', color='blue')
+plt.plot(time_route_2, stbd_load_feedback_route_2, label='Starboard Load Feedback - Route 2', color='orange')
 
-# Formatting the plot
+# Formatting the plot for Route 2
 plt.title('Thruster Power Over Time - Route 2')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Load Feedback (kW)')
 plt.legend()
 plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 2
 plt.show()

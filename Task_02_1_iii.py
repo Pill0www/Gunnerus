@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 # Load the CSV file
 file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
@@ -18,77 +17,64 @@ filled_data = pivoted_data.fillna(method='ffill')
 # Reset the index to get timestamps as a column again
 filled_data.reset_index(inplace=True)
 
-# Scale factor for load feedback
-a = 500 / 100
+# Extract power profiles for Engine 1 and Engine 3
+engine1_power = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'].values  # kW
+engine3_power = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'].values  # kW
 
-# Extract vectors for port and starboard load feedback
-port_load_feedback = a * filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
-stbd_load_feedback = a * filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
+# Define route indices
+route_1_start = 530
+route_1_finish = 1108
+route_2_start = route_1_finish
+route_2_finish = 2660
 
-# Combine the load feedback values (Combined Thruster Power)
-combined_thruster_power = port_load_feedback + stbd_load_feedback
+# Route 1: Calculate η_e for Engine 1 only
+engine1_x_route_1 = 100 * (engine1_power[route_1_start:route_1_finish] / 450)  # Normalized engine 1 power
+eta_e_route_1 = -0.0024 * engine1_x_route_1**2 + 0.402 * engine1_x_route_1 + 27.4382  # η_e for Engine 1 on Route 1
 
-# Extract engine load for Engine 1 and Engine 3
-engine1_load = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'].values
-engine3_load = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'].values
+# Route 2: Calculate η_e for combined Engine 1 and Engine 3 power
+engine_combined_x_route_2 = 100 * ((engine1_power[route_2_start:route_2_finish] + engine3_power[route_2_start:route_2_finish]) / 900)  # Normalized combined power
+eta_e_route_2 = -0.0024 * engine_combined_x_route_2**2 + 0.402 * engine_combined_x_route_2 + 27.4382  # η_e for combined engines on Route 2
 
-# Combine engine loads (Combined Engine Power)
-combined_engine_load = engine1_load + engine3_load
+# Calculate time in minutes from the start
+time_from_start = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
 
-# Split the data in half for Route 1 and Route 2
-half_index = len(filled_data) // 2
+# Time data for Route 1 and Route 2, adjusted to start at 0 for each route
+time_route_1 = time_from_start[route_1_start:route_1_finish] - time_from_start[route_1_start]
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]
 
-# Data for Route 1
-timestamps_route_1 = filled_data['timestamp'][:half_index]
-combined_thruster_power_route_1 = combined_thruster_power[:half_index]
-combined_engine_load_route_1 = combined_engine_load[:half_index]
+# Combine time and efficiency data for both routes
+combined_time = list(time_route_1) + list(time_route_2 + time_route_1.iloc[-1])  # Add last time of Route 1 to Route 2
+combined_eta_e = list(eta_e_route_1) + list(eta_e_route_2)  # Combine η_e values
 
-# Data for Route 2
-timestamps_route_2 = filled_data['timestamp'][half_index:]
-combined_thruster_power_route_2 = combined_thruster_power[half_index:]
-combined_engine_load_route_2 = combined_engine_load[half_index:]
-
-# Plotting Route 1
+# Plotting η_e for Route 1 (Engine 1 only)
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_1, 100 * (combined_thruster_power_route_1 / combined_engine_load_route_1), 
-         label='Combined Thruster Power - Route 1', color='blue')
-plt.plot(timestamps_route_2, 100 * (combined_thruster_power_route_2 / combined_engine_load_route_2), 
-         label='Combined Thruster Power - Route 2', color='green')
-
-
-# Set y-axis limit to a maximum of 120
-plt.ylim(0, 120)
-
-# Formatting the plot
-plt.title('Combined Thruster Power vs. Combined Engine Load Over Time - Route 1 and Route 2')
-plt.xlabel('Time')
-plt.ylabel('Power Efficiency [%]')
-plt.axhline(100, color='red', linestyle='--', label='100% Efficiency')
+plt.plot(time_route_1, eta_e_route_1, label='Engine Efficiency (η_e) - Route 1 (Engine 1 Only)', color='blue')
+plt.title('Engine Efficiency (η_e) vs Time - Route 1 (Engine 1 Only)')
+plt.xlabel('Time (minutes from start)')
+plt.ylabel('Efficiency η_e [%]')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 1
 plt.show()
 
-# Plotting Route 2
+# Plotting η_e for Route 2 (Combined Engines 1 and 3)
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_2, 100 * (combined_thruster_power_route_2 / combined_engine_load_route_2), 
-         label='Combined Thruster Power - Route 2', color='blue')
-
-# Set y-axis limit to a maximum of 120
-plt.ylim(0, 120)
-
-# Formatting the plot
-plt.title('Combined Thruster Power vs. Combined Engine Load Over Time - Route 2')
-plt.xlabel('Time')
-plt.ylabel('Power Efficiency [%]')
-plt.axhline(100, color='red', linestyle='--', label='100% Efficiency')
+plt.plot(time_route_2, eta_e_route_2, label='Engine Efficiency (η_e) - Route 2 (Combined Engines 1 and 3)', color='red')
+plt.title('Engine Efficiency (η_e) vs Time - Route 2 (Combined Engines 1 and 3)')
+plt.xlabel('Time (minutes)')
+plt.ylabel('Efficiency η_e [%]')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 2
 plt.show()
+
+# Plotting η_e for Route 1 (Engine 1 only)
+plt.figure(figsize=(12, 6))
+plt.plot(time_route_1, eta_e_route_1, label='Engine Efficiency (η_e) - Route 1 (Engine 1 Only)', color='blue')
+plt.plot(time_route_2 + time_route_1.iloc[-1], eta_e_route_2, label='Engine Efficiency (η_e) - Route 2 (Combined Engines 1 and 3)', color='red')
+plt.title('Engine Efficiency (η_e) vs Time (Combined Routes)')
+plt.xlabel('Time (minutes from start)')
+plt.ylabel('Efficiency η_e [%]')
+plt.axvline(x=time_route_1.iloc[-1], color='gray', linestyle='--', label='Transition Point')
+plt.legend()
+plt.tight_layout()
+plt.show()
+

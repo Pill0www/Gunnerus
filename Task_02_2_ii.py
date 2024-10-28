@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 # Load the CSV file
 file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
@@ -29,34 +28,38 @@ engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.832
 # Total fuel flow rate (kg/h)
 total_fuel_flow_kgph = engine1_fuel_consumption_kgph + engine3_fuel_consumption_kgph
 
-# Split the data in half for Route 1 and Route 2
-half_index = len(filled_data) // 2
+# Calculate time in minutes from the start
+time_from_start = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
+
+# Define indices for Route 1 and Route 2
+route_1_start = 530
+route_1_finish = 1108
+route_2_start = route_1_finish
+route_2_finish = 2660
 
 # Data for Route 1
-timestamps_route_1 = filled_data['timestamp'][:half_index]
-engine1_fuel_route_1 = engine1_fuel_consumption_kgph[:half_index]
-engine3_fuel_route_1 = engine3_fuel_consumption_kgph[:half_index]
-total_fuel_flow_route_1 = total_fuel_flow_kgph[:half_index]
+time_route_1 = time_from_start[route_1_start:route_1_finish] - time_from_start[route_1_start]  # Start at 0
+engine1_fuel_route_1 = engine1_fuel_consumption_kgph[route_1_start:route_1_finish]
+engine3_fuel_route_1 = engine3_fuel_consumption_kgph[route_1_start:route_1_finish]
+total_fuel_flow_route_1 = total_fuel_flow_kgph[route_1_start:route_1_finish]
 
 # Data for Route 2
-timestamps_route_2 = filled_data['timestamp'][half_index:]
-engine1_fuel_route_2 = engine1_fuel_consumption_kgph[half_index:]
-engine3_fuel_route_2 = engine3_fuel_consumption_kgph[half_index:]
-total_fuel_flow_route_2 = total_fuel_flow_kgph[half_index:]
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Start at 0
+engine1_fuel_route_2 = engine1_fuel_consumption_kgph[route_2_start:route_2_finish]
+engine3_fuel_route_2 = engine3_fuel_consumption_kgph[route_2_start:route_2_finish]
+total_fuel_flow_route_2 = total_fuel_flow_kgph[route_2_start:route_2_finish]
 
 # Plotting fuel flow rate for Route 1
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_1, engine1_fuel_route_1, label='Engine 1 Fuel Flow - Route 1', color='blue')
-plt.plot(timestamps_route_1, engine3_fuel_route_1, label='Engine 3 Fuel Flow - Route 1', color='orange')
-plt.plot(timestamps_route_1, total_fuel_flow_route_1, label='Total Fuel Flow - Route 1', color='green')
+plt.plot(time_route_1, engine1_fuel_route_1, label='Engine 1 Fuel Flow - Route 1', color='blue')
+plt.plot(time_route_1, engine3_fuel_route_1, label='Engine 3 Fuel Flow - Route 1', color='orange')
+plt.plot(time_route_1, total_fuel_flow_route_1, label='Total Fuel Flow - Route 1', color='green')
 
 # Formatting the plot
 plt.title('Fuel Flow Rate (Qf) vs Time - Route 1')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Fuel Flow Rate [Kg/h]')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
 
 # Show the plot for Route 1
@@ -64,17 +67,15 @@ plt.show()
 
 # Plotting fuel flow rate for Route 2
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_2, engine1_fuel_route_2, label='Engine 1 Fuel Flow - Route 2', color='blue')
-plt.plot(timestamps_route_2, engine3_fuel_route_2, label='Engine 3 Fuel Flow - Route 2', color='orange')
-plt.plot(timestamps_route_2, total_fuel_flow_route_2, label='Total Fuel Flow - Route 2', color='green')
+plt.plot(time_route_2, engine1_fuel_route_2, label='Engine 1 Fuel Flow - Route 2', color='blue')
+plt.plot(time_route_2, engine3_fuel_route_2, label='Engine 3 Fuel Flow - Route 2', color='orange')
+plt.plot(time_route_2, total_fuel_flow_route_2, label='Total Fuel Flow - Route 2', color='green')
 
 # Formatting the plot
 plt.title('Fuel Flow Rate (Qf) vs Time - Route 2')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Fuel Flow Rate [Kg/h]')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
 
 # Show the plot for Route 2

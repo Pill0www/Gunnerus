@@ -1,6 +1,6 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 # Load the CSV file
 file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
@@ -18,70 +18,73 @@ filled_data = pivoted_data.fillna(method='ffill')
 # Reset the index to get timestamps as a column again
 filled_data.reset_index(inplace=True)
 
-# Extract vectors for port and starboard load feedback
-port_load_feedback = (500 / 100) * filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
-stbd_load_feedback = (500 / 100) * filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
+# Extract power profiles for Engine 1 and Engine 3
+engine1_power = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'].values  # kW
+engine3_power = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'].values  # kW
 
-# Combine the load feedback values
-combined_load_feedback = port_load_feedback + stbd_load_feedback
+# Normalize power to calculate x(t) for each engine
+engine1_x = 100 * (engine1_power / 450)  # Normalized engine 1 power
+engine3_x = 100 * (engine3_power / 450)  # Normalized engine 3 power
 
-# Extract fuel consumption for Engine 1 and Engine 3
-engine1_fuel_consumption = filled_data['gunnerus/RVG_mqtt/Engine1/fuel_consumption'].values
-engine3_fuel_consumption = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consumption'].values
+# Calculate η_e for each engine using the given function
+engine1_eta_e = -0.0024 * engine1_x**2 + 0.402 * engine1_x + 27.4382
+engine3_eta_e = -0.0024 * engine3_x**2 + 0.402 * engine3_x + 27.4382
 
-# Total fuel consumption in liters per hour
-total_fuel_consumption_lph = engine1_fuel_consumption + engine3_fuel_consumption
+# Calculate combined efficiency η_e as a weighted average of η_e1 and η_e3
+total_power = engine1_power + engine3_power
+combined_eta_e = (engine1_eta_e * engine1_power + engine3_eta_e * engine3_power) / total_power
 
-# Convert liters per hour to kilograms per hour (using the density of diesel: ~0.832 Kg/L)
-total_fuel_consumption_kgph = total_fuel_consumption_lph * 0.832
+# Calculate total power efficiency η_p by multiplying with constant efficiencies
+eta_g = 0.96
+eta_VSD = 0.97
+eta_SW = 0.99
+eta_p = combined_eta_e * eta_g * eta_VSD * eta_SW * 0.97  # Total η_p
 
-# Calculate total energy efficiency (ηE) in percentage
-energy_density = 42 * 10**6  # Energy content of diesel fuel in J/kg
-# Total energy output in Joules (Power in Watts * time in seconds)
-total_energy_output_joules = combined_load_feedback * 10**3 * 3600  # J (from kW to J)
-# Total energy input from fuel in Joules
-total_energy_input_joules = total_fuel_consumption_kgph * energy_density  # J
-# Calculate efficiency as a percentage
-total_energy_efficiency = (total_energy_output_joules / total_energy_input_joules) * 100
+# Constants
+LHV = 42 * 10**6  # Lower Heating Value in J/kg
+seconds_per_hour = 3600  # Number of seconds in an hour
 
-# Slicing the vectors in half to get route 1 and route 2
-half_index = len(port_load_feedback) // 2  # Use integer division to get an integer index
+# Convert power to watts
+engine1_power_watts = engine1_power * 1000  # kW to W
+engine3_power_watts = engine3_power * 1000  # kW to W
+
+# Calculate fuel consumption M_f as a function of time
+total_power_watts = engine1_power_watts + engine3_power_watts
+M_f = total_power_watts * 3600 / (eta_p / 100 * LHV)
+
+# Calculate time in minutes from the start
+time_from_start = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
+
+# Define indices for Route 1 and Route 2
+route_1_start = 530
+route_1_finish = 1108
+route_2_start = route_1_finish
+route_2_finish = 2660
 
 # Data for Route 1
-timestamps_route_1 = filled_data['timestamp'][:half_index]
-total_energy_efficiency_route_1 = total_energy_efficiency[:half_index]
+time_route_1 = time_from_start[route_1_start:route_1_finish]
+M_f_route_1 = M_f[route_1_start:route_1_finish]
 
 # Data for Route 2
-timestamps_route_2 = filled_data['timestamp'][half_index:]
-total_energy_efficiency_route_2 = total_energy_efficiency[half_index:]
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Adjust to start at 0
+M_f_route_2 = M_f[route_2_start:route_2_finish]
 
-# Plotting Route 1
-plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_1, total_energy_efficiency_route_1, label='Total Energy Efficiency - Route 1', color='blue')
-plt.plot(timestamps_route_2, total_energy_efficiency_route_2, label='Total Energy Efficiency - Route 2', color='green')
-plt.axhline(100, color='red', linestyle='--', label='100% Efficiency')
-plt.title('Total Energy Efficiency Over Time')
-plt.xlabel('Time')
-plt.ylabel('Energy Efficiency [%]')
-plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-plt.tight_layout()
+# Calculate the total load energy for each route
+E_load_route_1 = np.trapz(M_f_route_1, time_route_1)  # Integral of fuel consumption for Route 1
+E_load_route_2 = np.trapz(M_f_route_2, time_route_2)  # Integral of fuel consumption for Route 2
 
-# Show the plot for Route 1
-plt.show()
+# Calculate the total energy supplied for each route
+# Assuming we use average η_p over each route for simplicity
+avg_eta_p_route_1 = np.mean(eta_p[route_1_start:route_1_finish])
+avg_eta_p_route_2 = np.mean(eta_p[route_2_start:route_2_finish])
 
-# Plotting Route 2
-plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_2, total_energy_efficiency_route_2, label='Total Energy Efficiency - Route 2', color='green')
-plt.axhline(100, color='red', linestyle='--', label='100% Efficiency')
-plt.title('Total Energy Efficiency Over Time - Route 2')
-plt.xlabel('Time')
-plt.ylabel('Energy Efficiency [%]')
-plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-plt.tight_layout()
+E_total_route_1 = E_load_route_1 / (avg_eta_p_route_1 / 100)  # Energy supplied for Route 1
+E_total_route_2 = E_load_route_2 / (avg_eta_p_route_2 / 100)  # Energy supplied for Route 2
 
-# Show the plot for Route 2
-plt.show()
+# Calculate energy efficiencies
+eta_E_route_1 = (E_load_route_1 / E_total_route_1) * 100  # Energy efficiency for Route 1
+eta_E_route_2 = (E_load_route_2 / E_total_route_2) * 100  # Energy efficiency for Route 2
+
+print(f"Total Energy Efficiency (η_E) for Route 1: {eta_E_route_1:.2f}%")
+print(f"Total Energy Efficiency (η_E) for Route 2: {eta_E_route_2:.2f}%")
+

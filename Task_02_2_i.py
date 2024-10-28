@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 # Load the CSV file
 file_path = '/Users/frithoftangen/Library/CloudStorage/OneDrive-NTNU/PSM/Prosjekt/Gunnerus/data.csv'
@@ -18,72 +17,58 @@ filled_data = pivoted_data.fillna(method='ffill')
 # Reset the index to get timestamps as a column again
 filled_data.reset_index(inplace=True)
 
-# Scale factor for load feedback
-a = 500 / 100
-
-# Extract vectors for port and starboard load feedback
-port_load_feedback = a * filled_data['gunnerus/RVG_mqtt/hcx_port_mp/LoadFeedback'].values
-stbd_load_feedback = a * filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback'].values
-
-# Combine the load feedback values (Combined Thruster Power)
-combined_thruster_power = port_load_feedback + stbd_load_feedback
-
 # Extract engine load for Engine 1 and Engine 3
 engine1_load = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'].values
 engine3_load = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'].values
 
-# Combine engine loads (Combined Engine Power)
-combined_engine_load = engine1_load + engine3_load
+# Combine engine loads
+combined_engine_load = (engine1_load + engine3_load)
 
-# Split the data in half for Route 1 and Route 2
-half_index = len(filled_data) // 2
+# Calculate time in minutes from the start
+time_from_start = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
+
+# Define route indices
+route_1_start = 530
+route_1_finish = 1108
+route_2_start = route_1_finish
+route_2_finish = 2660
 
 # Data for Route 1
-timestamps_route_1 = filled_data['timestamp'][:half_index]
-combined_thruster_power_route_1 = combined_thruster_power[:half_index]
-engine1_load_route_1 = engine1_load[:half_index]
-engine3_load_route_1 = engine3_load[:half_index]
+time_route_1 = time_from_start[route_1_start:route_1_finish] - time_from_start[route_1_start]  # Start at 0
+engine1_load_route_1 = engine1_load[route_1_start:route_1_finish]
+engine3_load_route_1 = engine3_load[route_1_start:route_1_finish]
+combined_load_route_1 = combined_engine_load[route_1_start:route_1_finish]
 
 # Data for Route 2
-timestamps_route_2 = filled_data['timestamp'][half_index:]
-combined_thruster_power_route_2 = combined_thruster_power[half_index:]
-engine1_load_route_2 = engine1_load[half_index:]
-engine3_load_route_2 = engine3_load[half_index:]
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Start at 0
+engine1_load_route_2 = engine1_load[route_2_start:route_2_finish]
+engine3_load_route_2 = engine3_load[route_2_start:route_2_finish]
+combined_load_route_2 = combined_engine_load[route_2_start:route_2_finish]
 
 # Plotting Route 1
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_1, engine1_load_route_1, label='Engine 1 Load - Route 1', color='blue')
-plt.plot(timestamps_route_1, engine3_load_route_1, label='Engine 3 Load - Route 1', color='orange')
-plt.plot(timestamps_route_1, combined_engine_load[:half_index], label='Total Supply Power - Route 1', color='green')
+plt.plot(time_route_1, engine1_load_route_1, label='Engine 1 Load - Route 1', color='blue')
+plt.plot(time_route_1, engine3_load_route_1, label='Engine 3 Load - Route 1', color='orange')
+plt.plot(time_route_1, combined_load_route_1, label='Total Supply Power - Route 1', color='green')
 
-# Formatting the plot
+# Formatting the plot for Route 1
 plt.title('Generated Power by Each DG and Total Supply Power - Route 1')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Power [kW]')
-plt.axhline(0, color='black', linestyle='--')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 1
 plt.show()
 
 # Plotting Route 2
 plt.figure(figsize=(12, 6))
-plt.plot(timestamps_route_2, engine1_load_route_2, label='Engine 1 Load - Route 2', color='blue')
-plt.plot(timestamps_route_2, engine3_load_route_2, label='Engine 3 Load - Route 2', color='orange')
-plt.plot(timestamps_route_2, combined_engine_load[half_index:], label='Total Supply Power - Route 2', color='green')
+plt.plot(time_route_2, engine1_load_route_2, label='Engine 1 Load - Route 2', color='blue')
+plt.plot(time_route_2, engine3_load_route_2, label='Engine 3 Load - Route 2', color='orange')
+plt.plot(time_route_2, combined_load_route_2, label='Total Supply Power - Route 2', color='green')
 
-# Formatting the plot
+# Formatting the plot for Route 2
 plt.title('Generated Power by Each DG and Total Supply Power - Route 2')
-plt.xlabel('Time')
+plt.xlabel('Time (minutes from start)')
 plt.ylabel('Power [kW]')
-plt.axhline(0, color='black', linestyle='--')
 plt.legend()
-plt.xticks(rotation=45)
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 plt.tight_layout()
-
-# Show the plot for Route 2
 plt.show()

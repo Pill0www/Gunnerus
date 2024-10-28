@@ -61,17 +61,39 @@ route_2_start = route_1_finish
 route_2_finish = 2660
 
 # Data for Route 1
-time_route_1 = time_from_start[route_1_start:route_1_finish]
+time_route_1 = time_from_start[route_1_start:route_1_finish] - time_from_start[route_1_start]  # Start at 0
 M_f_route_1 = M_f[route_1_start:route_1_finish]
 
 # Data for Route 2
-time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Adjust to start at 0
+time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Start at 0
 M_f_route_2 = M_f[route_2_start:route_2_finish]
 
-# Plotting Instantaneous Fuel Consumption for Route 1
+# Extract fuel consumption for Engine 1 and Engine 3 for Q2
+engine1_fuel_consumption_lph = filled_data['gunnerus/RVG_mqtt/Engine1/fuel_consumption'].values  # Liters per hour
+engine3_fuel_consumption_lph = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consumption'].values  # Liters per hour
+
+# Convert liters per hour to kilograms per hour (using the density of diesel: ~0.832 Kg/L)
+engine1_fuel_consumption_kgph = engine1_fuel_consumption_lph * 0.832
+engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.832
+
+# Total fuel flow rate (kg/h)
+total_fuel_flow_kgph = engine1_fuel_consumption_kgph + engine3_fuel_consumption_kgph
+
+# Data for Route 1 from Q2
+engine1_fuel_route_1 = engine1_fuel_consumption_kgph[route_1_start:route_1_finish]
+engine3_fuel_route_1 = engine3_fuel_consumption_kgph[route_1_start:route_1_finish]
+total_fuel_flow_route_1 = total_fuel_flow_kgph[route_1_start:route_1_finish]
+
+# Data for Route 2 from Q2
+engine1_fuel_route_2 = engine1_fuel_consumption_kgph[route_2_start:route_2_finish]
+engine3_fuel_route_2 = engine3_fuel_consumption_kgph[route_2_start:route_2_finish]
+total_fuel_flow_route_2 = total_fuel_flow_kgph[route_2_start:route_2_finish]
+
+# Plotting Fuel Consumption for Route 1
 plt.figure(figsize=(12, 6))
-plt.plot(time_route_1, M_f_route_1, label='Instantaneous Fuel Consumption (M_f) - Route 1', color='blue')
-plt.title('Fuel Consumption (M_f) vs Time - Route 1')
+plt.plot(time_route_1, M_f_route_1, label='Q1 Calculated, Fuel Consumption (M_f) - Route 1', color='blue')
+plt.plot(time_route_1, total_fuel_flow_route_1, label='Q2 Data based, Fuel Consumption (Q_f) - Route 1', color='orange')
+plt.title('Fuel Consumption Comparison - Route 1')
 plt.xlabel('Time (minutes from start)')
 plt.ylabel('Fuel Consumption (kg/h)')
 plt.legend()
@@ -79,10 +101,11 @@ plt.grid()
 plt.tight_layout()
 plt.show()
 
-# Plotting Instantaneous Fuel Consumption for Route 2
+# Plotting Fuel Consumption for Route 2
 plt.figure(figsize=(12, 6))
-plt.plot(time_route_2, M_f_route_2, label='Instantaneous Fuel Consumption (M_f) - Route 2', color='red')
-plt.title('Fuel Consumption (M_f) vs Time - Route 2')
+plt.plot(time_route_2, M_f_route_2, label='Q1 Calculated, Fuel Consumption (M_f) - Route 2, Q1', color='red')
+plt.plot(time_route_2, total_fuel_flow_route_2, label='Q2 Data based, Fuel Consumption (Q_f) - Route 2', color='green')
+plt.title('Fuel Consumption Comparison - Route 2')
 plt.xlabel('Time (minutes from start)')
 plt.ylabel('Fuel Consumption (kg/h)')
 plt.legend()
@@ -92,9 +115,11 @@ plt.show()
 
 # Combining Route 1 and Route 2 for a single plot
 plt.figure(figsize=(12, 6))
-plt.plot(time_route_1, M_f_route_1, label='Route 1', color='blue')
-plt.plot(time_route_2 + time_route_1.iloc[-1], M_f_route_2, label='Route 2', color='red')  # Adjust Route 2 to start where Route 1 ends
-plt.title('Fuel Consumption (M_f) vs Time - Combined Routes 1 and 2')
+plt.plot(time_route_1, M_f_route_1, label='Q1 Calculated, Fuel Consumption (M_f) - Route 1', color='blue')
+plt.plot(time_route_1, total_fuel_flow_route_1, label='Q2 Data based, Fuel Consumption (Q_f) - Route 1', color='orange')
+plt.plot(time_route_2 + time_route_1.iloc[-1], M_f_route_2, label='Q1 Calculated, Fuel Consumption (M_f) - Route 2, Q1', color='red')
+plt.plot(time_route_2 + time_route_1.iloc[-1], total_fuel_flow_route_2, label='Q2 Data based, Fuel Consumption (Q_f) - Route 2', color='green')
+plt.title('Fuel Consumption Comparison - Combined Routes 1 and 2')
 plt.xlabel('Time (minutes from start)')
 plt.ylabel('Fuel Consumption (kg/h)')
 plt.axvline(x=time_route_1.iloc[-1], color='gray', linestyle='--', label='Transition Point')
