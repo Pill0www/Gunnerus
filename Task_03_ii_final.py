@@ -63,11 +63,12 @@ else:
 def diesel_co2(total_fuel_consumed): # in [kg]
     return total_fuel_consumed * 3.1 # in [kg]
 
+
 # Print total fuel consumption for each route
 print(f"Total fuel consumption for Route 1: {total_fuel_consumption_route_1:.2f} kg")
 print(f"Total fuel consumption for Route 2: {total_fuel_consumption_route_2:.2f} kg")
 # Print total fuel consumption for entire voyage
-print(f'Total amount Co2 emitted for the voyage is {diesel_co2(total_fuel_consumed_entire_dataset):.2f} kg, assumin accsess air 1.6 times stoichiometric air-fuel ratio. (23.9:1 air-fuel ratio)')
+print(f'Total amount Co2 emitted for the voyage is {diesel_co2(total_fuel_consumed_entire_dataset):.2f} kg, assuming access air 1.6 times stoichiometric air-fuel ratio. (23.9:1 air-fuel ratio)')
 
     # Plotting total fuel consumption over time
 plt.figure(figsize=(12, 6))

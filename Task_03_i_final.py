@@ -33,9 +33,6 @@ df_starboard_power = filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/LoadFeedback']
 engine1_load = filled_data['gunnerus/RVG_mqtt/Engine1/engine_load'] #.values
 engine3_load = filled_data['gunnerus/RVG_mqtt/Engine3/engine_load'] #.values
 
-#Extract motor rpm
-engine1_rpm = filled_data['gunnerus/RVG_mqtt/hcx_stbd_mp/RPMFeedback'] #.values
-engine3_rpm = filled_data['gunnerus/RVG_mqtt/hcx_port_mp/RPMFeedback']
 # Combine engine loads (Combined Engine Power) in [kW]
 combined_engine_load = engine1_load + engine3_load
 
@@ -50,7 +47,7 @@ V_d = np.pi * (0.127 / 2)**2 * 0.154  # Volume of the cylinder [m^3]
 def fuel_consumption_to_g_per_s(l_per_h):
     return l_per_h * 820 / 3600
 
-# Calculate fuel mass flow rate for each engine (in kg/s)
+# Calculate fuel mass flow rate for each engine (in g/s)
 fuel_mass_flow_eng1 = fuel_consumption_to_g_per_s(df_fuel_cons_eng1)
 fuel_mass_flow_eng3 = fuel_consumption_to_g_per_s(df_fuel_cons_eng3)
 
@@ -79,7 +76,7 @@ def BMEP(power, rpm):
     return 8*(power*2)/(V_d * (rpm/60)) #times 8 as there is 8 cyinders
 
 #prints of torque and BMPE
-print(f'Torque at max thermal efficiency: {Torque(engine1_load[2706], 1800):.3f} Nm')
+print(f'Torque at max thermal efficiency: {Torque(engine1_load.max(), 1800):.3f} Nm')
 print(f'Torque at minimum thermal efficiency: {Torque(engine1_load[5307], 1800):.3f} Nm')
 print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800):.3f} Pa')
 print(f' BMEP at minimum efficitency: {BMEP(engine1_load[5307], 1800):.3f} Pa')
