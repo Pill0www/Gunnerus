@@ -27,9 +27,9 @@ engine1_fuel_consumption_lph = filled_data['gunnerus/RVG_mqtt/Engine1/fuel_consu
 engine3_fuel_consumption_lph = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consumption'].astype(float).values  # Liters per hour
 
 
-# Convert liters per hour to kilograms per hour (using the density of diesel: ~0.832 Kg/L)
-engine1_fuel_consumption_kgph = engine1_fuel_consumption_lph * 0.832
-engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.832
+# Convert liters per hour to kilograms per hour (using the density of diesel: ~0.820 Kg/L)
+engine1_fuel_consumption_kgph = engine1_fuel_consumption_lph * 0.820
+engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.820
 
  # Total fuel flow rate (kg/h), remove any NaN values
 total_fuel_flow_kgph = np.nan_to_num(engine1_fuel_consumption_kgph + engine3_fuel_consumption_kgph)
@@ -73,6 +73,7 @@ print(f'Total amount Co2 emitted for the voyage is {diesel_co2(total_fuel_consum
     # Plotting total fuel consumption over time
 plt.figure(figsize=(12, 6))
 plt.plot(time_diff_minutes.cumsum(), total_fuel_consumption, label='Total Fuel Consumption - Entire Dataset', color='purple')
+#plt.plot(time_diff_minutes.cumsum(), diesel_co2(total_fuel_consumption), label='Total CO2 emitted - Entire Dataset', color='blue')
 plt.title('Total Fuel Consumption (M_f) vs Time - Entire Dataset')
 plt.xlabel('Time (minutes from start)')
 plt.ylabel('Total Fuel Consumption [Kg]')

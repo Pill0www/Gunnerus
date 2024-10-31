@@ -73,13 +73,14 @@ def Torque(power, rpm): #N = rpm/60 = crank shaft rotational speed (rev/sec)
     return (power * 1000) / (2*np.pi * (rpm/60))
 
 def BMEP(power, rpm):
-    return 8*(power*2)/(V_d * (rpm/60)) #times 8 as there is 8 cyinders
+    return (power*1000*2)/(V_d*8 * (rpm/60)) #times 8 as there is 8 cyinders
+
 
 #prints of torque and BMPE
-print(f'Torque at max thermal efficiency: {Torque(engine1_load.max(), 1800):.3f} Nm')
+print(f'Torque at max thermal efficiency: {Torque(engine1_load[2706], 1800):.3f} Nm')
 print(f'Torque at minimum thermal efficiency: {Torque(engine1_load[5307], 1800):.3f} Nm')
-print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800):.3f} Pa')
-print(f' BMEP at minimum efficitency: {BMEP(engine1_load[5307], 1800):.3f} Pa')
+print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800)*10**(-5):.3f} Bar')
+print(f' BMEP at minimum efficitency: {BMEP(engine1_load[5307], 1800)*10**(-5):.3f} Bar')
 # Plot thermal efficiency over time
 plt.figure(figsize=(10, 6))
 plt.plot(filled_data['timestamp'], thermal_efficiency_eng1, label='Thermal Efficiency Engine 1')
