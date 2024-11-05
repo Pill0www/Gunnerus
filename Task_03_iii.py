@@ -28,32 +28,70 @@ engine3_fuel_consumption_lph = filled_data['gunnerus/RVG_mqtt/Engine3/fuel_consu
 
 
 # Convert liters per hour to kilograms per hour (using the density of diesel: ~0.832 Kg/L)
-engine1_fuel_consumption_kgph = engine1_fuel_consumption_lph * 0.832
-engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.832
-
- # Total fuel flow rate (kg/h), remove any NaN values
-total_fuel_flow_kgph = np.nan_to_num(engine1_fuel_consumption_kgph + engine3_fuel_consumption_kgph)
+engine1_fuel_consumption_kgph = engine1_fuel_consumption_lph * 0.820
+engine3_fuel_consumption_kgph = engine3_fuel_consumption_lph * 0.820
 
 # Calculate time differences from the start in minutes
 time_diff_minutes = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
 time_diff_minutes = time_diff_minutes.diff().fillna(0)  # Remove NaNs from time differences
 
+# Total fuel flow rate (kg/h), remove any NaN values
+total_fuel_flow_kgph = np.nan_to_num(engine1_fuel_consumption_kgph + engine3_fuel_consumption_kgph)
+
 # Calculate cumulative fuel consumption (M_f)
 total_fuel_consumption = np.cumsum(total_fuel_flow_kgph * time_diff_minutes / 60)
 
-Average_fuel_consumption = (1/len(total_fuel_flow_kgph))*total_fuel_flow_kgph.sum()
+# Calculate the running average fuel consumption
+running_avg_fuel_consumption = np.cumsum(total_fuel_flow_kgph) / np.arange(1, len(total_fuel_flow_kgph) + 1)
 
-fuel_capacity = 60 # [m^3]
-density = 820 # [kg/m^3]
+# Define the route indices for Route 1 and 2
+route_1_start = 530
+route_1_finish = 1108
+route_2_finish = min(2660, len(total_fuel_consumption)-30)
 
-total_fuel = fuel_capacity * density # kg diesel
+# Print average fuel consumption in kg/h for the voyage
+average_fuel_consumption = (np.mean(total_fuel_flow_kgph[route_1_finish:route_2_finish]) + np.mean(total_fuel_flow_kgph[route_1_start:route_1_finish]))/2
+average_fuel_consumption_tot = np.mean(total_fuel_flow_kgph)
+print(f'Average fuel consumption for Route 1 and Route 2: {average_fuel_consumption:.2f} kg per hour')
+print(f'Average fuel consumption for Total trip: {average_fuel_consumption_tot:.2f} kg per hour')
 
-# Print average fuel consumption in kg/h
-print(f'Average fuel consumption for the voyage: {Average_fuel_consumption:.2f} kg per. hour')
-
-Total_sailtime = total_fuel/Average_fuel_consumption # [kg] / [kg/t] = [t]
+Total_sailtime = 49000/average_fuel_consumption # [kg] / [kg/t] = [t]
 
 print(f'Total sailtime is {(Total_sailtime):.2f} hours, assuing the vessle runs on two engines only')
 print(f'Which mean the ship could sail for {(Total_sailtime)/24:.0f} days')
 
-print(total_fuel_flow_kgph.max())
+#print(total_fuel_flow_kgph.max())
+
+plt.figure(figsize=(12, 6))
+plt.plot(time_diff_minutes.cumsum(), total_fuel_consumption, label='Total Fuel Consumption', color='blue')
+
+# Plot formatting
+plt.title('Total Fuel Consumption vs Time for the Entire Trip')
+plt.xlabel('Time (minutes from start)')
+plt.ylabel('Total Fuel Consumption [Kg]')
+plt.legend()
+plt.tight_layout()
+
+# Running average fuel consumption over time
+plt.plot(time_diff_minutes.cumsum(), running_avg_fuel_consumption, label='Running Average Fuel Consumption', color='orange', linestyle='--')
+
+# Plot formatting
+plt.title('Total and Running Average Fuel Consumption Over Time')
+plt.xlabel('Time (minutes from start)')
+plt.ylabel('Fuel Consumption [Kg]')
+plt.legend()
+plt.tight_layout()
+
+# Plotting fuel consumption for Route 2
+plt.figure(figsize=(12, 6))
+plt.plot(time_diff_minutes.cumsum()[route_1_finish:route_2_finish], 
+         total_fuel_consumption[route_1_finish:route_2_finish], 
+         label='Fuel Consumption - Route 2', color='green')
+
+# Plot formatting
+plt.title('Fuel Consumption vs Time - Route 2')
+plt.xlabel('Time (minutes from start)')
+plt.ylabel('Total Fuel Consumption [Kg]')
+plt.legend()
+plt.tight_layout()
+plt.show()

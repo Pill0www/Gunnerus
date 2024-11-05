@@ -63,7 +63,8 @@ else:
 def diesel_co2(total_fuel_consumed): # in [kg]
     return total_fuel_consumed * 3.1 # in [kg]
 
-
+plt.plot(filled_data['timestamp'], total_fuel_flow_kgph, label='total fuel flow l pr h')
+plt.show()
 # Print total fuel consumption for each route
 print(f"Total fuel consumption for Route 1: {total_fuel_consumption_route_1:.2f} kg")
 print(f"Total fuel consumption for Route 2: {total_fuel_consumption_route_2:.2f} kg")

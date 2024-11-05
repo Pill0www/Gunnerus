@@ -61,6 +61,12 @@ sfc2 = sfc(fuel_mass_flow_eng3, engine3_load)
 thermal_efficiency_eng1 = 1 / (Q_hs * sfc1) * 100 #%
 thermal_efficiency_eng3 = 1 / (Q_hs * sfc2) * 100
 
+# Smooth thermal efficiency data using a moving average
+window_size = 25  # Set this to adjust smoothing level
+smoothed_thermal_efficiency_eng1 = thermal_efficiency_eng1.rolling(window=window_size, min_periods=1).mean()
+smoothed_thermal_efficiency_eng3 = thermal_efficiency_eng3.rolling(window=window_size, min_periods=1).mean()
+
+
 #Minimum and maximum thermal efficiensis
 print(f' minimum thermal eff. at datapoint nr: {thermal_efficiency_eng1.idxmin()}')
 print(f' maximum thermal eff. at datapoint nr: {thermal_efficiency_eng1.idxmax()}')
@@ -77,14 +83,16 @@ def BMEP(power, rpm):
 
 
 #prints of torque and BMPE
+print(min_thermal_efficiency_eng1)
 print(f'Torque at max thermal efficiency: {Torque(engine1_load[2706], 1800):.3f} Nm')
 print(f'Torque at minimum thermal efficiency: {Torque(engine1_load[5307], 1800):.3f} Nm')
 print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800)*10**(-5):.3f} Bar')
 print(f' BMEP at minimum efficitency: {BMEP(engine1_load[5307], 1800)*10**(-5):.3f} Bar')
 # Plot thermal efficiency over time
 plt.figure(figsize=(10, 6))
-plt.plot(filled_data['timestamp'], thermal_efficiency_eng1, label='Thermal Efficiency Engine 1')
-plt.plot(filled_data['timestamp'], thermal_efficiency_eng3, label='Thermal Efficiency Engine 3')
+plt.plot(filled_data['timestamp'], smoothed_thermal_efficiency_eng1, label='Thermal Efficiency Engine 1')
+plt.plot(filled_data['timestamp'], smoothed_thermal_efficiency_eng3, label='Thermal Efficiency Engine 3')
+plt.plot(filled_data['timestamp'], total_fuel_consumption_lph, label='total_fuel_consumption_lph')
 plt.xlabel('Time')
 plt.ylabel('Thermal Efficiency (%)')
 plt.title('Thermal Efficiency of Engines Over Time')
