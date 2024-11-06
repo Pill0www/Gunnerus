@@ -83,7 +83,7 @@ def BMEP(power, rpm):
 
 
 #prints of torque and BMPE
-print(min_thermal_efficiency_eng1)
+print(thermal_efficiency_eng1[2706])
 print(f'Torque at max thermal efficiency: {Torque(engine1_load[2706], 1800):.3f} Nm')
 print(f'Torque at minimum thermal efficiency: {Torque(engine1_load[5307], 1800):.3f} Nm')
 print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800)*10**(-5):.3f} Bar')
@@ -92,7 +92,6 @@ print(f' BMEP at minimum efficitency: {BMEP(engine1_load[5307], 1800)*10**(-5):.
 plt.figure(figsize=(10, 6))
 plt.plot(filled_data['timestamp'], smoothed_thermal_efficiency_eng1, label='Thermal Efficiency Engine 1')
 plt.plot(filled_data['timestamp'], smoothed_thermal_efficiency_eng3, label='Thermal Efficiency Engine 3')
-plt.plot(filled_data['timestamp'], total_fuel_consumption_lph, label='total_fuel_consumption_lph')
 plt.xlabel('Time')
 plt.ylabel('Thermal Efficiency (%)')
 plt.title('Thermal Efficiency of Engines Over Time')

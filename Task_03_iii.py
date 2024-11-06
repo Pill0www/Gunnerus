@@ -47,10 +47,10 @@ running_avg_fuel_consumption = np.cumsum(total_fuel_flow_kgph) / np.arange(1, le
 # Define the route indices for Route 1 and 2
 route_1_start = 530
 route_1_finish = 1108
-route_2_finish = min(2660, len(total_fuel_consumption)-30)
+route_2_finish = 2660
 
 # Print average fuel consumption in kg/h for the voyage
-average_fuel_consumption = (np.mean(total_fuel_flow_kgph[route_1_finish:route_2_finish]) + np.mean(total_fuel_flow_kgph[route_1_start:route_1_finish]))/2
+average_fuel_consumption = np.mean(total_fuel_flow_kgph[route_1_start:route_2_finish])
 average_fuel_consumption_tot = np.mean(total_fuel_flow_kgph)
 print(f'Average fuel consumption for Route 1 and Route 2: {average_fuel_consumption:.2f} kg per hour')
 print(f'Average fuel consumption for Total trip: {average_fuel_consumption_tot:.2f} kg per hour')
