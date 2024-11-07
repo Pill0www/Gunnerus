@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Load the CSV file
@@ -60,20 +61,28 @@ route_1_finish = 1108
 route_2_start = route_1_finish
 route_2_finish = 2660
 
+total_fuel_flow_kgph = np.nan_to_num(M_f)
+
+# Calculate time differences from the start in minutes
+time_diff_minutes = (filled_data['timestamp'] - filled_data['timestamp'].iloc[0]).dt.total_seconds() / 60
+time_diff_minutes = time_diff_minutes.diff().fillna(0)  # Remove NaNs from time differences
+
+total_fuel_consumption = np.cumsum(total_fuel_flow_kgph * time_diff_minutes / 60)
 # Data for Route 1
 time_route_1 = time_from_start[route_1_start:route_1_finish]
-M_f_route_1 = M_f[route_1_start:route_1_finish]
+M_f_route_1 = total_fuel_consumption[route_1_start:route_1_finish]
 
 # Data for Route 2
 time_route_2 = time_from_start[route_2_start:route_2_finish] - time_from_start[route_2_start]  # Adjust to start at 0
-M_f_route_2 = M_f[route_2_start:route_2_finish]
+M_f_route_2 = total_fuel_consumption[route_2_start:route_2_finish]
+
 
 # Plotting Instantaneous Fuel Consumption for Route 1
 plt.figure(figsize=(12, 6))
 plt.plot(time_route_1, M_f_route_1, label='Instantaneous Fuel Consumption (M_f) - Route 1', color='blue')
 plt.title('Fuel Consumption (M_f) vs Time - Route 1')
 plt.xlabel('Time (minutes from start)')
-plt.ylabel('Fuel Consumption (kg/h)')
+plt.ylabel('Fuel Consumption (kg)')
 plt.legend()
 plt.grid()
 plt.tight_layout()
@@ -84,7 +93,7 @@ plt.figure(figsize=(12, 6))
 plt.plot(time_route_2, M_f_route_2, label='Instantaneous Fuel Consumption (M_f) - Route 2', color='red')
 plt.title('Fuel Consumption (M_f) vs Time - Route 2')
 plt.xlabel('Time (minutes from start)')
-plt.ylabel('Fuel Consumption (kg/h)')
+plt.ylabel('Fuel Consumption (kg)')
 plt.legend()
 plt.grid()
 plt.tight_layout()
@@ -96,7 +105,7 @@ plt.plot(time_route_1, M_f_route_1, label='Route 1', color='blue')
 plt.plot(time_route_2 + time_route_1.iloc[-1], M_f_route_2, label='Route 2', color='red')  # Adjust Route 2 to start where Route 1 ends
 plt.title('Fuel Consumption (M_f) vs Time - Combined Routes 1 and 2')
 plt.xlabel('Time (minutes from start)')
-plt.ylabel('Fuel Consumption (kg/h)')
+plt.ylabel('Fuel Consumption (kg)')
 plt.axvline(x=time_route_1.iloc[-1], color='gray', linestyle='--', label='Transition Point')
 plt.legend()
 plt.grid()

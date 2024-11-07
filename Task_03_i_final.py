@@ -62,7 +62,7 @@ thermal_efficiency_eng1 = 1 / (Q_hs * sfc1) * 100 #%
 thermal_efficiency_eng3 = 1 / (Q_hs * sfc2) * 100
 
 # Smooth thermal efficiency data using a moving average
-window_size = 25  # Set this to adjust smoothing level
+window_size = 15  # Set this to adjust smoothing level
 smoothed_thermal_efficiency_eng1 = thermal_efficiency_eng1.rolling(window=window_size, min_periods=1).mean()
 smoothed_thermal_efficiency_eng3 = thermal_efficiency_eng3.rolling(window=window_size, min_periods=1).mean()
 
@@ -83,7 +83,7 @@ def BMEP(power, rpm):
 
 
 #prints of torque and BMPE
-print(thermal_efficiency_eng1[2706])
+print(smoothed_thermal_efficiency_eng1.min())
 print(f'Torque at max thermal efficiency: {Torque(engine1_load[2706], 1800):.3f} Nm')
 print(f'Torque at minimum thermal efficiency: {Torque(engine1_load[5307], 1800):.3f} Nm')
 print(f' BMEP at max efficitency: {BMEP(engine1_load[2706], 1800)*10**(-5):.3f} Bar')
